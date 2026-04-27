@@ -1,0 +1,72 @@
+
+
+/* 使用类选择器 (.) 定义可复用的样式 */
+.welcome-label {
+    -unity-font-style: bold-and-italic;
+    font-size: 24px;
+    color: rgb(51, 204, 255); /* 浅蓝色 */
+    margin-bottom: 5px;
+    -unity-text-align: middle-center;
+    background-color: rgba(26, 26, 26, 0.8);
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(80, 80, 80);
+}
+
+.function-label {
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+
+.custom-font {
+    -unity-font-style: bold;
+    /*-unity-font-definition: url(" ");*/
+}
+
+/* 按钮基础样式 */
+.action-button {
+    -unity-font-style: bold;
+    height: 18px;
+    width: 60px;
+    font-size: 12px;
+    background-color: rgb(76, 140, 230);
+    color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    margin-left: auto;
+    margin-right: 20px;
+    margin-top: 10px;
+}
+
+/* 按钮悬停效果 (伪类) */
+.action-button:hover {
+    background-color: rgb(100, 160, 250);
+    border-left-width: 2px;
+    border-left-color: rgb(200, 220, 255);
+    border-right-width: 2px;
+    border-right-color: rgb(200, 220, 255);
+}
+
+/* 按钮按下效果 */
+.action-button:active {
+    background-color: rgb(50, 100, 180);
+}
+
+/* 虚线分割线 */
+.dashed-divider {
+    height: 1px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    background-color: transparent;
+    background-image: repeating-linear-gradient(
+        to right,
+        rgba(128, 128, 128, 0.5) 0px,
+        rgba(128, 128, 128, 0.5) 4px,
+        transparent 4px,
+        transparent 8px
+    );
+    flex-shrink: 0;
+}
