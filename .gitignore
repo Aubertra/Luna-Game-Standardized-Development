@@ -3,15 +3,35 @@
 # ================================================
 
 # ---------- 1. 强制忽略的本地生成目录 ----------
+# Visual Studio
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.userprefs
+
+# Unity 本地生成目录
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
 [Bb]uild/
 /[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
+
+# Luna 框架临时文件
 LunaTemp/
+
+# 本地项目版本（可能含路径）
+ProjectSettings/ProjectVersion.txt
+
+# 临时文件和备份
+Temp.txt
 Backup/
+
+# IDE 生成
+*.csproj
+*.unityproj
+*.sln
 
 # ---------- 2. Unity 自动生成，不纳入版本控制 ----------
 # 崩溃内存转储
