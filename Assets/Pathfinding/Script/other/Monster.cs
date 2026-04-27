@@ -9,7 +9,7 @@ public class Mosnter : MonoBehaviour
 
     void Update()
     {
-        //transform.MoveToTile(Player.instance.playerTile, MoveSpeed * Time.deltaTime, PathfindingAlgorithm.JPS);
-        FlowFieldLogic.MoveWithFlow(transform, Player.Instance.transform, MoveSpeed * Time.deltaTime);
+        //transform.MoveToTile(Player.Instance.playerTile, MoveSpeed * Time.deltaTime, PathfindingAlgorithm.JPS, -1, true);
+        FlowFieldLogic.MoveWithFlow(transform, Player.Instance.transform, MoveSpeed * Time.deltaTime, false);
     }
 }

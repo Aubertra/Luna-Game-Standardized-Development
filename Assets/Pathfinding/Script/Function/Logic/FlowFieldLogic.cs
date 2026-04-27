@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AirStack.Pathfinding
@@ -17,6 +18,25 @@ namespace AirStack.Pathfinding
         public const int DIR_SW = 5;
         public const int DIR_W = 6;
         public const int DIR_NW = 7;
+
+
+        // 方向列表：四方向和八方向
+        private static readonly int[] DirX4 = { 0, 1, 0, -1 };  // N, E, S, W
+        private static readonly int[] DirY4 = { 1, 0, -1, 0 };
+        private static readonly int[] DirX8 = { 0, 1, 1, 1, 0, -1, -1, -1 };  // N, NE, E, SE, S, SW, W, NW
+        private static readonly int[] DirY8 = { 1, 1, 0, -1, -1, -1, 0, 1 };
+
+        // 八方向对应的两个相邻四方向（用于对角线障碍检查）
+        private static readonly (int dir1, int dir2)[] DiagonalNeighbors = {
+        (-1, -1),    // N (不是对角线，占位)
+        (0, 2),      // NE -> N(0), E(2)
+        (-1, -1),    // E (不是对角线，占位)
+        (2, 4),      // SE -> E(2), S(4)
+        (-1, -1),    // S (不是对角线，占位)
+        (4, 6),      // SW -> S(4), W(6)
+        (-1, -1),    // W (不是对角线，占位)
+        (6, 0)       // NW -> W(6), N(0)
+    };
 
         // === 多个流场实例，使用目标Transform的InstanceID作为Key ===
         private static Dictionary<int, FlowFieldInstance> flowFields = new Dictionary<int, FlowFieldInstance>();
@@ -40,9 +60,9 @@ namespace AirStack.Pathfinding
 
             public Dictionary<long, ushort> costField;
             public Dictionary<long, byte> flowField;
-            public Transform target;  // 目标Transform
-            public long currentGoalId;  // 当前目标Tile的ID
-            public Vector2Int currentGoalPos;  // 当前目标位置
+            public Transform target;
+            public long currentGoalId;
+            public Vector2Int currentGoalPos;
             public bool fieldValid;
             public BuildState state = BuildState.Idle;
             public Queue<long> bfsQueue;
@@ -51,9 +71,10 @@ namespace AirStack.Pathfinding
             public int bfsFrameCount;
             public float createTime;
             public bool allowDiagonal;
+            public int createFrames;
 
-            public const int BFS_BUDGET = 100;
-            public const int FLOW_BUDGET = 150;
+            public const int BFS_BUDGET = 250;
+            public const int FLOW_BUDGET = 250;
             public const int MAX_BFS_FRAMES = 100;
 
             public bool IsValid => fieldValid && flowField != null;
@@ -88,26 +109,18 @@ namespace AirStack.Pathfinding
                 currentGoalId = targetTile.identifier;
                 currentGoalPos = AStarLogic.DecodeKey(currentGoalId);
 
-                // 清空之前的数据
-                if (costField != null)
-                    costField.Clear();
-                else
-                    costField = new Dictionary<long, ushort>();
+                // 清空之前的数据（防御性检查）
+                costField?.Clear();
+                flowField?.Clear();
+                bfsQueue?.Clear();
+                allReachableNodes?.Clear();
 
-                if (flowField != null)
-                    flowField.Clear();
-                else
-                    flowField = new Dictionary<long, byte>();
-
-                if (bfsQueue != null)
-                    bfsQueue.Clear();
-                else
-                    bfsQueue = new Queue<long>();
-
-                if (allReachableNodes != null)
-                    allReachableNodes.Clear();
-                else
-                    allReachableNodes = new List<long>();
+                // 重新初始化集合
+                int cap = MapCache.mapCache.Count;
+                costField ??= new Dictionary<long, ushort>(cap);
+                flowField ??= new Dictionary<long, byte>(cap);
+                bfsQueue ??= new Queue<long>(cap);
+                allReachableNodes ??= new List<long>(cap);
 
                 // 初始化目标点
                 costField[currentGoalId] = 1;
@@ -117,6 +130,7 @@ namespace AirStack.Pathfinding
                 fieldValid = false;
                 bfsFrameCount = 0;
                 flowBuildIndex = 0;
+                createFrames = 0;
 
                 return true;
             }
@@ -133,7 +147,6 @@ namespace AirStack.Pathfinding
 
                 if (targetTile.identifier != currentGoalId)
                 {
-                    // 目标移动到了新的Tile，重新初始化
                     return InitFromTarget();
                 }
                 return false;
@@ -144,9 +157,16 @@ namespace AirStack.Pathfinding
                 switch (state)
                 {
                     case BuildState.BfsQueueing:
+                        if (bfsQueue == null)
+                        {
+                            state = BuildState.Idle;
+                            return false;
+                        }
+                        createFrames++;
                         ProcessBfsSlice();
                         return false;
                     case BuildState.FlowBuilding:
+                        createFrames++;
                         ProcessFlowSlice();
                         return false;
                     case BuildState.Ready:
@@ -156,10 +176,61 @@ namespace AirStack.Pathfinding
                 }
             }
 
+            /// <summary>
+            /// 获取当前模式下的方向数组
+            /// </summary>
+            private void GetDirectionArrays(out int[] dirX, out int[] dirY, out int maxDir)
+            {
+                if (allowDiagonal)
+                {
+                    dirX = DirX8;
+                    dirY = DirY8;
+                    maxDir = 8;
+                }
+                else
+                {
+                    dirX = DirX4;
+                    dirY = DirY4;
+                    maxDir = 4;
+                }
+            }
+
+            /// <summary>
+            /// 检查对角线移动是否被阻挡
+            /// </summary>
+            private bool IsDiagonalBlocked(int x, int y, int dir)
+            {
+                if (!allowDiagonal) return false;
+
+                // 只有奇数是八方向中的对角线方向
+                if ((dir & 1) == 0) return false;
+
+                var neighbors = DiagonalNeighbors[dir];
+                int nx1 = x + DirX8[neighbors.dir1];
+                int ny1 = y + DirY8[neighbors.dir1];
+                int nx2 = x + DirX8[neighbors.dir2];
+                int ny2 = y + DirY8[neighbors.dir2];
+
+                return !IsWalkableStatic(nx1, ny1) || !IsWalkableStatic(nx2, ny2);
+            }
+
+            /// <summary>
+            /// 将四方向索引转换为八方向索引
+            /// </summary>
+            private int ConvertTo8Dir(int dir4)
+            {
+                // 四方向 N(0),E(1),S(2),W(3) -> 八方向 N(0),E(2),S(4),W(6)
+                return dir4 * 2;
+            }
+
             private void ProcessBfsSlice()
             {
                 if (bfsQueue == null || bfsQueue.Count == 0)
                 {
+                    if (PathFindingConfig.DEBUG_MODE)
+                    {
+                        Debug.Log($"[FlowField] BFS完成，可达节点={allReachableNodes.Count}，帧数={bfsFrameCount}");
+                    }
                     state = BuildState.FlowBuilding;
                     flowBuildIndex = 0;
                     return;
@@ -168,12 +239,13 @@ namespace AirStack.Pathfinding
                 bfsFrameCount++;
                 if (bfsFrameCount > MAX_BFS_FRAMES)
                 {
+                    Debug.LogWarning($"[FlowField] BFS超过{MAX_BFS_FRAMES}帧，强制进入流场构建");
                     state = BuildState.FlowBuilding;
                     flowBuildIndex = 0;
                     return;
                 }
 
-                int maxDir = allowDiagonal ? 8 : 4;
+                GetDirectionArrays(out int[] dirX, out int[] dirY, out int maxDir);
                 int budget = BFS_BUDGET;
 
                 while (budget > 0 && bfsQueue.Count > 0)
@@ -184,30 +256,21 @@ namespace AirStack.Pathfinding
 
                     for (int dir = 0; dir < maxDir; dir++)
                     {
-                        int nx = pos.x + DirX[dir];
-                        int ny = pos.y + DirY[dir];
+                        int nx = pos.x + dirX[dir];
+                        int ny = pos.y + dirY[dir];
 
                         if (!IsWalkableStatic(nx, ny))
                             continue;
 
-                        if ((dir & 1) == 1)
-                        {
-                            int hDir, vDir;
-                            if (dir == DIR_NE) { hDir = DIR_E; vDir = DIR_N; }
-                            else if (dir == DIR_SE) { hDir = DIR_E; vDir = DIR_S; }
-                            else if (dir == DIR_SW) { hDir = DIR_W; vDir = DIR_S; }
-                            else { hDir = DIR_W; vDir = DIR_N; }
-
-                            if (!IsWalkableStatic(pos.x + DirX[hDir], pos.y + DirY[hDir]) ||
-                                !IsWalkableStatic(pos.x + DirX[vDir], pos.y + DirY[vDir]))
-                                continue;
-                        }
+                        // 检查对角线阻挡
+                        if (IsDiagonalBlocked(pos.x, pos.y, dir))
+                            continue;
 
                         long neighbor = AStarLogic.EncodeKey(nx, ny);
 
                         if (!costField.ContainsKey(neighbor))
                         {
-                            costField[neighbor] = (ushort)(curCost + 1);
+                            costField.Add(neighbor, (ushort)(curCost + 1));
                             bfsQueue.Enqueue(neighbor);
                             allReachableNodes.Add(neighbor);
                         }
@@ -221,62 +284,56 @@ namespace AirStack.Pathfinding
             {
                 if (allReachableNodes == null || flowBuildIndex >= allReachableNodes.Count)
                 {
+                    if (PathFindingConfig.DEBUG_MODE)
+                    {
+                        Debug.Log($"[FlowField] 流场构建完成，总构建帧数={createFrames}，节点数={allReachableNodes?.Count ?? 0}");
+                    }
+
                     state = BuildState.Ready;
                     fieldValid = true;
                     bfsQueue = null;
                     return;
                 }
 
-                int maxDir = allowDiagonal ? 8 : 4;
+                GetDirectionArrays(out int[] dirX, out int[] dirY, out int maxDir);
                 int budget = FLOW_BUDGET;
-                int end = flowBuildIndex + budget;
-                if (end > allReachableNodes.Count) end = allReachableNodes.Count;
+                int end = Math.Min(flowBuildIndex + budget, allReachableNodes.Count);
 
                 for (int i = flowBuildIndex; i < end; i++)
                 {
                     long key = allReachableNodes[i];
                     ushort curCost = costField[key];
 
+                    // 目标点直接设置方向
                     if (curCost == 1)
                     {
-                        flowField[key] = DIR_N;
+                        flowField[key] = 0; // 任何方向都可以，目标点不需要移动
                         continue;
                     }
 
                     Vector2Int pos = AStarLogic.DecodeKey(key);
                     ushort bestCost = ushort.MaxValue;
-                    byte bestDir = DIR_N;
+                    byte bestDir = 0;
 
                     for (int dir = 0; dir < maxDir; dir++)
                     {
-                        int nx = pos.x + DirX[dir];
-                        int ny = pos.y + DirY[dir];
+                        int nx = pos.x + dirX[dir];
+                        int ny = pos.y + dirY[dir];
 
                         if (!IsWalkableStatic(nx, ny))
                             continue;
 
-                        if ((dir & 1) == 1)
-                        {
-                            int hDir, vDir;
-                            if (dir == DIR_NE) { hDir = DIR_E; vDir = DIR_N; }
-                            else if (dir == DIR_SE) { hDir = DIR_E; vDir = DIR_S; }
-                            else if (dir == DIR_SW) { hDir = DIR_W; vDir = DIR_S; }
-                            else { hDir = DIR_W; vDir = DIR_N; }
-
-                            if (!IsWalkableStatic(pos.x + DirX[hDir], pos.y + DirY[hDir]) ||
-                                !IsWalkableStatic(pos.x + DirX[vDir], pos.y + DirY[vDir]))
-                                continue;
-                        }
+                        // 检查对角线阻挡
+                        if (IsDiagonalBlocked(pos.x, pos.y, dir))
+                            continue;
 
                         long neighbor = AStarLogic.EncodeKey(nx, ny);
 
-                        if (costField.TryGetValue(neighbor, out ushort nCost))
+                        if (costField.TryGetValue(neighbor, out ushort nCost) && nCost < bestCost)
                         {
-                            if (nCost < bestCost)
-                            {
-                                bestCost = nCost;
-                                bestDir = (byte)dir;
-                            }
+                            bestCost = nCost;
+                            // 如果使用八方向，直接使用dir；如果使用四方向，转换为八方向索引以保持兼容
+                            bestDir = (byte)(allowDiagonal ? dir : ConvertTo8Dir(dir));
                         }
                     }
 
@@ -315,6 +372,89 @@ namespace AirStack.Pathfinding
                         return 0.5f + 0.5f * (flowBuildIndex / (float)allReachableNodes.Count);
                     return 0.1f;
                 }
+            }
+
+            // 调试可视化
+#if UNITY_EDITOR
+            public void DrawDebugInfo(Vector3 worldOffset, float cellSize, float duration = 0.0f)
+            {
+                if (flowField == null || costField == null) return;
+
+                foreach (var kvp in flowField)
+                {
+                    Vector2Int pos = AStarLogic.DecodeKey(kvp.Key);
+                    Vector3 worldPos = new Vector3(pos.x * cellSize, 0, pos.y * cellSize) + worldOffset;
+
+                    int dirIndex = kvp.Value;
+                    Vector3 dir;
+                    if (allowDiagonal)
+                    {
+                        dir = new Vector3(DirX8[dirIndex], 0, DirY8[dirIndex]);
+                    }
+                    else
+                    {
+                        dir = new Vector3(DirX4[dirIndex / 2], 0, DirY4[dirIndex / 2]);
+                    }
+
+                    if (costField.TryGetValue(kvp.Key, out ushort cost))
+                    {
+                        // 颜色从红（远）到绿（近）
+                        float maxCost = Mathf.Max(costField.Values.Max(), 1f);
+                        Color color = Color.Lerp(Color.red, Color.green, 1f - (cost / maxCost));
+
+                        Debug.DrawRay(worldPos, dir * cellSize * 0.4f, color, duration);
+
+                        // 显示距离文本
+                        UnityEditor.Handles.Label(worldPos + Vector3.up * 0.1f, cost.ToString());
+                    }
+                }
+            }
+#endif
+
+            /// <summary>
+            /// 获取从起点到目标的完整路径
+            /// </summary>
+            public List<Vector2Int> GetPath(int startX, int startY, int maxSteps = 1000)
+            {
+                var path = new List<Vector2Int>();
+                int x = startX, y = startY;
+                int steps = 0;
+                var visited = new HashSet<long>(); // 防止死循环
+
+                while (steps < maxSteps)
+                {
+                    long key = AStarLogic.EncodeKey(x, y);
+                    if (!visited.Add(key))
+                    {
+                        Debug.LogWarning($"[FlowField] 路径检测到死循环 at ({x},{y})");
+                        break;
+                    }
+
+                    int dir = GetFlowDirection(x, y);
+                    if (dir < 0) break;
+
+                    path.Add(new Vector2Int(x, y));
+
+                    // 到达目标
+                    if (x == currentGoalPos.x && y == currentGoalPos.y)
+                        break;
+
+                    // 根据方向移动
+                    if (allowDiagonal)
+                    {
+                        x += DirX8[dir];
+                        y += DirY8[dir];
+                    }
+                    else
+                    {
+                        x += DirX4[dir / 2];
+                        y += DirY4[dir / 2];
+                    }
+
+                    steps++;
+                }
+
+                return path;
             }
         }
 

@@ -8442,6 +8442,10 @@
                 "excluded": false
             },
             {
+                "name": "AirStack.Pathfinding.MeshScaleType",
+                "excluded": false
+            },
+            {
                 "name": "pc.Debugger.Components.EditorCamera",
                 "excluded": true
             },
@@ -8877,7 +8881,7 @@
                     },
                     {
                         "name": "toString",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "parse",
@@ -15857,19 +15861,19 @@
                     },
                     {
                         "name": "Load",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Load$2",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "UpdateUnityObject",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "LoadObjectFromResources",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "LoadComponent",
@@ -15921,7 +15925,7 @@
                     },
                     {
                         "name": "NormalizeResourcePath",
-                        "excluded": true
+                        "excluded": false
                     }
                 ]
             },
@@ -16883,15 +16887,15 @@
                     },
                     {
                         "name": "ctor",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "CallAwake",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "CallOnEnable",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "CallOnDisable",
@@ -17077,7 +17081,7 @@
                     },
                     {
                         "name": "color#set",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "shader#get",
@@ -17197,7 +17201,7 @@
                     },
                     {
                         "name": "GetColor$1",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "GetColor",
@@ -26548,10 +26552,6 @@
                         "excluded": false
                     },
                     {
-                        "name": "CalculateJumpDistancesForDirection",
-                        "excluded": false
-                    },
-                    {
                         "name": "GetCardinalDir",
                         "excluded": false
                     },
@@ -26581,6 +26581,46 @@
                     },
                     {
                         "name": "FindNearestWalkable",
+                        "excluded": true
+                    },
+                    {
+                        "name": "InitBounds",
+                        "excluded": false
+                    },
+                    {
+                        "name": "HasForcedNeighborInDirection",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CalculateStraightJumpDistances",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CalculateDiagonalJumpDistances",
+                        "excluded": false
+                    },
+                    {
+                        "name": "IsInRange",
+                        "excluded": false
+                    },
+                    {
+                        "name": "TryJumpInDirection",
+                        "excluded": true
+                    },
+                    {
+                        "name": "CheckForcedNeighborDirections",
+                        "excluded": true
+                    },
+                    {
+                        "name": "GetDirectionIndex",
+                        "excluded": true
+                    },
+                    {
+                        "name": "InterpolatePath",
+                        "excluded": true
+                    },
+                    {
+                        "name": "ClearPreprocessedData",
                         "excluded": true
                     }
                 ]
@@ -26754,6 +26794,10 @@
                     {
                         "name": "Update",
                         "excluded": false
+                    },
+                    {
+                        "name": "ResetColor",
+                        "excluded": false
                     }
                 ]
             },
@@ -26796,6 +26840,46 @@
                     {
                         "name": "init",
                         "excluded": false
+                    },
+                    {
+                        "name": "Instance#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CostDecideSpeed#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CostDecideSpeed#set",
+                        "excluded": true
+                    },
+                    {
+                        "name": "AllowOccupyTile#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "AllowOccupyTile#set",
+                        "excluded": true
+                    },
+                    {
+                        "name": "DEBUG_MODE#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "DEBUG_MODE#set",
+                        "excluded": true
+                    },
+                    {
+                        "name": "CreateMeshScale#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CreateMeshScale#set",
+                        "excluded": true
+                    },
+                    {
+                        "name": "CreateDefaultConfig",
+                        "excluded": true
                     }
                 ]
             },
@@ -26995,6 +27079,22 @@
                     },
                     {
                         "name": "GetDistance",
+                        "excluded": true
+                    },
+                    {
+                        "name": "GetDirectionArrays",
+                        "excluded": false
+                    },
+                    {
+                        "name": "IsDiagonalBlocked",
+                        "excluded": false
+                    },
+                    {
+                        "name": "ConvertTo8Dir",
+                        "excluded": false
+                    },
+                    {
+                        "name": "GetPath",
                         "excluded": true
                     }
                 ]

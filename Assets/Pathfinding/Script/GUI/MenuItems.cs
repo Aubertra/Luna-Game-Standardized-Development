@@ -112,6 +112,15 @@ namespace AirStack.Pathfinding
             });
             rootVisualElement.Add(perTileSizeField);
 
+            var meshScaleField = new EnumField("网格排布方式", PathFindingConfig.CreateMeshScale);
+            meshScaleField.AddToClassList("custom-font");
+            meshScaleField.value = PathFindingConfig.CreateMeshScale;
+            meshScaleField.RegisterValueChangedCallback(evt =>
+            {
+                PathFindingConfig.CreateMeshScale = (MeshScaleType)evt.newValue;
+            });
+            rootVisualElement.Add(meshScaleField);
+
             // 创建一个按钮控件
             var createButton = new Button(() =>
             {

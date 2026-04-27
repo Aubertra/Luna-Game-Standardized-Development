@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace AirStack.Pathfinding
@@ -38,6 +39,7 @@ namespace AirStack.Pathfinding
             info.position = transform.position;
         }
 
+        bool needRestColor = true;
 
         private void Update()
         {
@@ -58,10 +60,21 @@ namespace AirStack.Pathfinding
                     //info.renderer.material.SetColor("_Color", Color.red);
                 }
             }
-            else
+            else if((info.renderer.material.GetColor("_Color") != Color.white && info.renderer.material.GetColor("_Color") != Color.yellow) && needRestColor)
+            {
+                needRestColor = false;
+                _ = ResetColor();
+            }
+        }
+
+        private async Task ResetColor()
+        {
+            await Task.Delay(500);
+            if (info.renderer.material.GetColor("_Color") != Color.white && info.renderer.material.GetColor("_Color") != Color.yellow)
             {
                 info.renderer.material.SetColor("_Color", Color.white);
             }
+            needRestColor = true;
         }
     }
 }

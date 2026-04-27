@@ -38,7 +38,7 @@ namespace AirStack.Pathfinding
     /// </summary>
     public static class TransformExtensions
     {
-        // 用 int(instanceID) 做键，比 Transform 哈希快 3-5 倍
+        // 用 int(instanceID) 做键
         private static readonly Dictionary<int, TileRef> tileCache = new Dictionary<int, TileRef>(64);
         private static readonly Dictionary<int, PathCache> pathCaches = new Dictionary<int, PathCache>(64);
 
@@ -48,7 +48,7 @@ namespace AirStack.Pathfinding
         #region 公共接口
 
         public static void MoveToTile(this Transform t, TileInfo target, float moveDist,
-            PathfindingAlgorithm algo = PathfindingAlgorithm.JPS)
+            PathfindingAlgorithm algo = PathfindingAlgorithm.JPS, float actionPoints = -1, bool allowDiagonal = true)
         {
             if (target == null) return;
 
@@ -79,7 +79,7 @@ namespace AirStack.Pathfinding
             {
                 var startV = Decode(curId);
                 var endV = Decode(tarId);
-                var path = Find(startV.x, startV.y, endV.x, endV.y, algo);
+                var path = Find(startV.x, startV.y, endV.x, endV.y, algo, actionPoints, allowDiagonal);
 
                 if (path == null || path.Count == 0)
                 {
@@ -117,6 +117,12 @@ namespace AirStack.Pathfinding
                 return;
             }
 
+            if (PathFindingConfig.DEBUG_MODE)
+            {
+                Debug.Log($"Next Tile: {AStarLogic.DecodeKey(nextTile.identifier)} , Cost: {nextTile.cost}");
+                nextTile.renderer.material.SetColor("_Color", Color.red); // 调试：标记下一个目标格子
+            }
+
             bool isLast = (ni == nodes.Count - 1);
             UpdateTileCache(id, curTile);
 
@@ -130,11 +136,11 @@ namespace AirStack.Pathfinding
         }
 
         public static void MoveToTile(this Transform t, Transform targetT, float moveDist,
-            PathfindingAlgorithm algo = PathfindingAlgorithm.JPS)
+            PathfindingAlgorithm algo = PathfindingAlgorithm.JPS, float actionPoints = -1, bool allowDiagonal = true)
         {
             if (targetT == null) return;
             var tile = MapCache.GetNearlyTile(targetT.position);
-            MoveToTile(t, tile, moveDist, algo);
+            MoveToTile(t, tile, moveDist, algo, actionPoints, allowDiagonal);
         }
 
         public static void AssignTarget(this Transform t, TileInfo target,
@@ -166,13 +172,13 @@ namespace AirStack.Pathfinding
 
         #region 路径计算
 
-        private static List<long> Find(int sx, int sy, int gx, int gy, PathfindingAlgorithm algo)
+        private static List<long> Find(int sx, int sy, int gx, int gy, PathfindingAlgorithm algo,float actionPoints = -1, bool allowDiagonal = true)
         {
             switch (algo)
             {
-                case PathfindingAlgorithm.JPSPlus: return JPSPlusLogic.FindPath(sx, sy, gx, gy);
-                case PathfindingAlgorithm.JPS: return JPSLogic.FindPath(sx, sy, gx, gy);
-                default: return AStarLogic.FindPath(sx, sy, gx, gy);
+                case PathfindingAlgorithm.JPSPlus: return JPSPlusLogic.FindPath(sx, sy, gx, gy, actionPoints, allowDiagonal);
+                case PathfindingAlgorithm.JPS: return JPSLogic.FindPath(sx, sy, gx, gy, actionPoints, allowDiagonal);
+                default: return AStarLogic.FindPath(sx, sy, gx, gy, actionPoints, allowDiagonal);
             }
         }
 
@@ -294,7 +300,7 @@ namespace AirStack.Pathfinding
 
         private static void TryOccupy(Transform t, TileInfo tile)
         {
-            if (!PathFindingConfig.AllowOccpuyTile) return;
+            if (!PathFindingConfig.AllowOccupyTile) return;
             if (tile.occpuyer != null) return;
             tile.cost = 999;
             tile.occpuyer = t;
@@ -302,7 +308,7 @@ namespace AirStack.Pathfinding
 
         private static void TryRelease(Transform t, TileInfo tile)
         {
-            if (!PathFindingConfig.AllowOccpuyTile) return;
+            if (!PathFindingConfig.AllowOccupyTile) return;
             if (tile.occpuyer != t) return;
             tile.cost = 1;
             tile.occpuyer = null;

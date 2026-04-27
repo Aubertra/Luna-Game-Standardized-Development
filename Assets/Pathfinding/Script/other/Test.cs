@@ -19,11 +19,11 @@ namespace AirStack.Pathfinding
             if (Input.GetKeyDown(KeyCode.I)) { var obj = Instantiate(monster); obj.SetActive(true); obj.transform.SetParent(monsterGroup); }
             if (startPoint != null)
             {
-                var path = FlowFieldLogic.GetNextTileForAgent(startPoint, Player.Instance.transform);
+                /*var path = FlowFieldLogic.GetNextTileForAgent(startPoint, Player.Instance.transform);
                 if (path != null)
                 {
                     path.renderer.material.SetColor("_Color", Color.red);
-                }
+                }*/
             }
         }
     }

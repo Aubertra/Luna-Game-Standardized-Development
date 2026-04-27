@@ -148,8 +148,19 @@ namespace AirStack.Pathfinding
         /// </summary>
         public static TileInfo GetNearlyTile(Vector3 pos)
         {
-            int startY = Mathf.RoundToInt(pos.z / (tilePrefabSize.y * 0.8f * perTileSize.y));
-            int startX = Mathf.RoundToInt(pos.x / (tilePrefabSize.x * 1.05f * perTileSize.x) - (startY & 1) * 0.5f);
+            int startY = 0;
+            int startX = 0;
+
+            if (PathFindingConfig.CreateMeshScale == MeshScaleType.Hexagonal)
+            {
+                startY = Mathf.RoundToInt(pos.z / (tilePrefabSize.y * 0.8f * perTileSize.y));
+                startX = Mathf.RoundToInt(pos.x / (tilePrefabSize.x * 1.05f * perTileSize.x) - (startY & 1) * 0.5f);
+            }
+            else if(PathFindingConfig.CreateMeshScale == MeshScaleType.Square)
+            {
+                startX = Mathf.RoundToInt(pos.x / (tilePrefabSize.x * 1.05f * perTileSize.x));
+                startY = Mathf.RoundToInt(pos.z / (tilePrefabSize.y * 1.05f * perTileSize.y));
+            }
 
             startX = Mathf.Clamp(startX, 0, maxX);
             startY = Mathf.Clamp(startY, 0, maxY);

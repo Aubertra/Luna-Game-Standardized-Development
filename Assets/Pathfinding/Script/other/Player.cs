@@ -7,7 +7,7 @@ public class Player : MonoSingleton<Player>
     {
         get
         {
-            if(Time.time - lastUpdateTileTime < 0.5f && tileInfo != null)
+            if(Time.time - lastUpdateTileTime < 1f && tileInfo != null)
             {
                 return tileInfo;
             }

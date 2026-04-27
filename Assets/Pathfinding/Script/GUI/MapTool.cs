@@ -69,16 +69,24 @@ namespace AirStack.Pathfinding
                 }
             }
 
-            MapCache.mapPrefab = PrefabUtility.SaveAsPrefabAsset(mapRoot.gameObject, "Assets/AStar Pathfinding/Model/Internal Use/GeneratedMap.prefab");
+            MapCache.mapPrefab = PrefabUtility.SaveAsPrefabAsset(mapRoot.gameObject, "Assets/Pathfinding/Model/Internal Use/GeneratedMap.prefab");
 
             return true;
         }
 
         private static void CalculateSpacing()
         {
-            // 正六边形的间距计算
-            horizontalSpacing = tilePrefabSize.x * 1.05f * perTileSize;
-            verticalSpacing = tilePrefabSize.y * 0.8f * perTileSize;
+            // 间距计算
+            if(PathFindingConfig.CreateMeshScale == MeshScaleType.Hexagonal)
+            {
+                horizontalSpacing = tilePrefabSize.x * 1.05f * perTileSize;
+                verticalSpacing = tilePrefabSize.y * 0.8f * perTileSize;
+            }
+            else
+            {
+                horizontalSpacing = tilePrefabSize.x * 1.05f * perTileSize;
+                verticalSpacing = tilePrefabSize.y * 1.05f * perTileSize;
+            }
         }
 
         private static Vector3 GetHexPosition(int x, int y)
@@ -86,10 +94,13 @@ namespace AirStack.Pathfinding
             float posX = x * horizontalSpacing;
             float posY = y * verticalSpacing;
 
-            // 奇数行偏移半个间距，形成蜂窝状排列
-            if ((y & 1) == 1)
+            if (PathFindingConfig.CreateMeshScale == MeshScaleType.Hexagonal)
             {
-                posX += horizontalSpacing / 2f;
+                // 奇数行偏移半个间距，形成蜂窝状排列
+                if ((y & 1) == 1)
+                {
+                    posX += horizontalSpacing / 2f;
+                }
             }
 
             return new Vector3(posX, 0, posY);

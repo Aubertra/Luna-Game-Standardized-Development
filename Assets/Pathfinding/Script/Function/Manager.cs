@@ -13,6 +13,10 @@ namespace AirStack.Pathfinding
         {
             base.Awake();
             MapCache.InitLunaMap();
+
+            Debug.Log($"PathFindingConfig AllowOccupyTile: {PathFindingConfig.AllowOccupyTile}");
+            Debug.Log($"PathFindingConfig CostDecideSpeed: {PathFindingConfig.CostDecideSpeed}");
+            Debug.Log($"PathFindingConfig CreateMeshScale: {PathFindingConfig.CreateMeshScale}");
         }
 
         private void Update()

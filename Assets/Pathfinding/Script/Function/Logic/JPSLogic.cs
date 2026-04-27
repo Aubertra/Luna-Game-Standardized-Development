@@ -404,8 +404,13 @@ namespace AirStack.Pathfinding
             }
             else
             {
-                if (allowDiagonal && HasForcedNeighbor(x, y, dirX, dirY))
+                // 无条件检查强制邻居
+                if (HasForcedNeighbor(x, y, dirX, dirY))
                     return new Vector2Int(x, y);
+
+                // 添加下一个位置的显式检查
+                if (!IsWalkable(x + dirX, y + dirY))
+                    return null;
 
                 return Jump(x + dirX, y + dirY, dirX, dirY, goalX, goalY, allowDiagonal);
             }
@@ -433,6 +438,30 @@ namespace AirStack.Pathfinding
                     return true;
                 if (IsWalkable(x - 1, y + dirY) && !IsWalkable(x - 1, y))
                     return true;
+            }
+            else if (dirX != 0)
+            {
+                bool inHorizontalCorridor = !IsWalkable(x, y + 1) && !IsWalkable(x, y - 1);
+
+                if (!inHorizontalCorridor)
+                {
+                    if (IsWalkable(x + dirX, y + 1) && !IsWalkable(x, y + 1))
+                        return true;
+                    if (IsWalkable(x + dirX, y - 1) && !IsWalkable(x, y - 1))
+                        return true;
+                }
+            }
+            else if (dirY != 0)
+            {
+                bool inVerticalCorridor = !IsWalkable(x + 1, y) && !IsWalkable(x - 1, y);
+
+                if (!inVerticalCorridor)
+                {
+                    if (IsWalkable(x + 1, y + dirY) && !IsWalkable(x + 1, y))
+                        return true;
+                    if (IsWalkable(x - 1, y + dirY) && !IsWalkable(x - 1, y))
+                        return true;
+                }
             }
 
             return false;

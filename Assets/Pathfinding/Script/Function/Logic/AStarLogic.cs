@@ -96,7 +96,6 @@ namespace AirStack.Pathfinding
 
     public static class AStarLogic
     {
-
         /// <summary>
         /// 将 Vector2Int 编码为 long (高32位存X，低32位存Y)
         /// </summary>
